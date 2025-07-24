@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Retro Snake</title>
+    <style>
+      /* Import a pixelated font for retro feel */
+      @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background-color: #000;
+        background-image: linear-gradient(
+            0deg,
+            transparent 24%,
+            #0f0 25%,
+            #0f0 26%,
+            transparent 27%,
+            transparent 74%,
+            #0f0 75%,
+            #0f0 76%,
+            transparent 77%,
+            transparent
+          ),
+          linear-gradient(
+            90deg,
+            transparent 24%,
+            #0f0 25%,
+            #0f0 26%,
+            transparent 27%,
+            transparent 74%,
+            #0f0 75%,
+            #0f0 76%,
+            transparent 77%,
+            transparent
+          );
+        background-size: 50px 50px;
+        background-position: -1px -1px;
+        font-family: "Press Start 2P", cursive;
+        color: #0f0;
+        overflow: hidden;
+        flex-direction: column;
+        touch-action: none; /* Prevent default touch actions */
+      }
+
+      .game-container {
+        border: 5px solid #0f0; /* Green border */
+        background-color: #000;
+        padding: 20px;
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.7); /* Green glow effect */
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 95vw;
+        box-sizing: border-box;
+      }
+
+      /* Control buttons container */
+      .control-buttons {
+        display: grid;
+        grid-template-areas:
+          ". up ."
+          "left . right"
+          ". down .";
+        gap: 10px;
+        margin-top: 20px;
+        touch-action: none;
+      }
+
+      .control-btn {
+        width: 60px;
+        height: 60px;
+        background-color: #0a0;
+        border: 4px solid #0f0;
+        color: #0f0;
+        font-family: "Press Start 2P", cursive;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        touch-action: none;
+        user-select: none;
+        position: relative;
+        box-shadow: 0 0 8px #050, inset 0 0 8px #050;
+        transition: all 0.1s ease;
+        border-radius: 50%;
+        overflow: hidden;
+      }
+
+      /* Arrow styling for all buttons */
+      .control-btn .arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .arrow-img {
+        width: 0;
+        height: 0;
+        border-left: 15px solid transparent;
+        border-right: 15px solid transparent;
+        border-bottom: 25px solid #0f0;
+        display: block;
+        margin: auto;
+        pointer-events: none;
+      }
+      .arrow-img.left {
+        transform: rotate(-90deg);
+      }
+      .arrow-img.right {
+        transform: rotate(90deg);
+      }
+      .arrow-img.down {
+        transform: rotate(180deg);
+      }
+      .arrow-img.up {
+        transform: rotate(0deg);
+      }
+
+      .control-btn:active {
+        background-color: #0f0;
+        transform: scale(0.95);
+        box-shadow: inset 0 0 12px #050;
+      }
+
+      .up-btn {
+        grid-area: up;
+      }
+      .down-btn {
+        grid-area: down;
+      }
+      .left-btn {
+        grid-area: left;
+        justify-self: end;
+      }
+      .right-btn {
+        grid-area: right;
+        justify-self: start;
+      }
+
+      @media (max-width: 600px) {
+        .game-info {
+          font-size: 0.7em;
+        }
+        canvas {
+          width: 100%;
+          height: auto;
+        }
+        .control-btn {
+          width: 50px;
+          height: 50px;
+          font-size: 16px;
+        }
+      }
+
+      canvas {
+        background-color: #000;
+        border: 2px solid #0f0;
+        display: block;
+        image-rendering: pixelated; /* Ensures crisp pixels for game elements */
+        image-rendering: -moz-crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+      }
+
+      .game-info {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 0;
+        font-size: 1em;
+        text-align: center;
+      }
+
+      .game-info div {
+        flex: 1;
+        padding: 0 5px;
+      }
+
+      .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(
+          0,
+          0,
+          0,
+          0.8
+        ); /* Semi-transparent black overlay */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-size: 1.2em;
+        padding: 20px;
+        box-sizing: border-box;
+        z-index: 10; /* Ensure overlay is on top */
+      }
+
+      .overlay h2 {
+        color: #ff0; /* Yellow for titles */
+        margin-bottom: 10px;
+        font-size: 1.5em;
+      }
+
+      .overlay p {
+        color: #0f0;
+        margin-bottom: 5px;
+      }
+
+      .overlay button {
+        background-color: #0a0; /* Darker green button */
+        color: #000; /* Black text on button */
+        border: 2px solid #0f0;
+        padding: 10px 20px;
+        font-family: "Press Start 2P", cursive;
+        font-size: 1em;
+        cursor: pointer;
+        margin-top: 20px;
+        box-shadow: 3px 3px 0px #050; /* Pixelated shadow effect */
+        transition: background-color 0.1s;
+      }
+
+      .overlay button:hover {
+        background-color: #0f0; /* Lighter green on hover */
+        box-shadow: 3px 3px 0px #080;
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <audio
+      id="bg-music"
+      src="Retro Video Game Music_ As Digested by a Classical Musician(MP3_160K)-[AudioTrimmer.com].mp3"
+      loop
+    ></audio>
+    <button
+      id="music-toggle"
+      title="Toggle Music"
+      style="
+        position: fixed;
+        top: 18px;
+        right: 24px;
+        z-index: 100;
+        background: transparent;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        font-size: 2em;
+        color: #0f0;
+      "
+    >
+      <span id="music-icon">&#127925;</span>
+    </button>
+    <button
+      id="pause-button"
+      title="Pause/Resume Game"
+      style="
+        position: fixed;
+        top: 18px;
+        right: 74px;
+        z-index: 100;
+        background: transparent;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        font-size: 2em;
+        color: #0f0;
+        opacity: 1;
+      "
+    >
+      ⏸️
+    </button>
+    <div class="game-container">
+      <div class="game-info">
+        <div>SCORE: <span id="score">0</span></div>
+        <div>LIVES: <span id="lives">3</span></div>
+        <div>HIGH SCORE: <span id="high-score">0</span></div>
+      </div>
+      <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+      <!-- Control buttons for mobile -->
+      <div class="control-buttons">
+        <button class="control-btn up-btn">
+          <span class="arrow"><div class="arrow-img up"></div></span>
+        </button>
+        <button class="control-btn left-btn">
+          <span class="arrow"><div class="arrow-img left"></div></span>
+        </button>
+        <button class="control-btn right-btn">
+          <span class="arrow"><div class="arrow-img right"></div></span>
+        </button>
+        <button class="control-btn down-btn">
+          <span class="arrow"><div class="arrow-img down"></div></span>
+        </button>
+      </div>
+
+      <div id="start-overlay" class="overlay">
+        <h2>RETRO SNAKE</h2>
+        <p>Use ARROW keys, WASD,</p>
+        <p>or touch buttons to move.</p>
+        <p>Press 'R' to restart anytime.</p>
+        <button id="startButton">START GAME</button>
+      </div>
+
+      <div id="game-over-overlay" class="overlay hidden">
+        <h2>GAME OVER!</h2>
+        <p>Your Score: <span id="final-score">0</span></p>
+        <p>High Score: <span id="final-high-score">0</span></p>
+        <button id="replayButton">PLAY AGAIN</button>
+      </div>
+    </div>
+
+    <script>
+      // Music controls
+      const bgMusic = document.getElementById("bg-music");
+      const musicToggle = document.getElementById("music-toggle");
+      const musicIcon = document.getElementById("music-icon");
+      let musicMuted = false;
+      function playMusic() {
+        if (bgMusic.paused && !musicMuted) {
+          bgMusic.volume = 0.5;
+          bgMusic.play().catch(() => {});
+        }
+      }
+      function updateMusicIcon() {
+        musicIcon.innerHTML = musicMuted ? "&#128263;" : "&#127925;";
+      }
+      musicToggle.addEventListener("click", () => {
+        musicMuted = !musicMuted;
+        bgMusic.muted = musicMuted;
+        updateMusicIcon();
+        if (!musicMuted) playMusic();
+      });
+      updateMusicIcon();
+
+      // Pause functionality
+      const pauseButton = document.getElementById("pause-button");
+      let isPaused = false;
+      let pauseUsed = false;
+      let savedGameSpeed = 0;
+
+      // Initially disable pause button
+      pauseButton.style.opacity = "0.3";
+      pauseButton.style.cursor = "not-allowed";
+
+      pauseButton.addEventListener("click", () => {
+        // Check if game has started and pause hasn't been used
+        if (
+          startOverlay.classList.contains("hidden") === false ||
+          gameOverOverlay.classList.contains("hidden") === false ||
+          pauseUsed
+        )
+          return;
+
+        isPaused = !isPaused;
+        pauseButton.textContent = isPaused ? "▶️" : "⏸️";
+
+        if (isPaused) {
+          savedGameSpeed = gameSpeed; // Save current game speed
+          clearInterval(gameInterval);
+          gameRunning = false;
+        } else {
+          gameRunning = true;
+          gameInterval = setInterval(gameLoop, gameSpeed);
+          pauseUsed = true; // Mark pause as used
+          pauseButton.style.opacity = "0.5"; // Visual feedback that pause can't be used again
+          pauseButton.style.cursor = "not-allowed";
+        }
+      });
+
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const scoreDisplay = document.getElementById("score");
+      const livesDisplay = document.getElementById("lives");
+      const highScoreDisplay = document.getElementById("high-score");
+      const startOverlay = document.getElementById("start-overlay");
+      const gameOverOverlay = document.getElementById("game-over-overlay");
+      const finalScoreDisplay = document.getElementById("final-score");
+      const finalHighScoreDisplay = document.getElementById("final-high-score");
+      const startButton = document.getElementById("startButton");
+      const replayButton = document.getElementById("replayButton");
+
+      const GRID_SIZE = 20; // Size of each snake segment and food
+      const CANVAS_WIDTH = canvas.width;
+      const CANVAS_HEIGHT = canvas.height;
+
+      let snake = [];
+      let food = {};
+      let dx = 0; // Direction x-coordinate
+      let dy = 0; // Direction y-coordinate
+      let score = 0;
+      let lives = 3;
+      let highScore = localStorage.getItem("snakeHighScore") || 0; // Load high score from local storage
+      let gameInterval; // Stores the setInterval ID
+      let gameSpeed = 150; // Initial game speed in milliseconds per frame
+      let gameRunning = false; // Flag to indicate if the game loop is active
+
+      function initGame() {
+        // Reset pause button state
+        isPaused = false;
+        pauseUsed = false;
+        pauseButton.textContent = "⏸️";
+        pauseButton.style.opacity = "1";
+
+        // Reset game state
+        snake = [
+          { x: 10 * GRID_SIZE, y: 10 * GRID_SIZE }, // Initial head position
+          { x: 9 * GRID_SIZE, y: 10 * GRID_SIZE }, // Initial body segment
+        ];
+        dx = GRID_SIZE; // Start moving right
+        dy = 0;
+        score = 0;
+        lives = 3;
+        gameSpeed = 150; // Reset speed
+        gameRunning = false; // Game is paused at start screen
+
+        generateFood(); // Place initial food
+        updateDisplay(); // Update score, lives, high score on screen
+        clearInterval(gameInterval); // Clear any running game loop
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); // Clear canvas
+        drawSnake(); // Draw initial snake and food
+        drawFood();
+
+        // Show start overlay, hide game over overlay
+        startOverlay.classList.remove("hidden");
+        gameOverOverlay.classList.add("hidden");
+      }
+
+      function updateDisplay() {
+        scoreDisplay.textContent = score;
+        livesDisplay.textContent = lives;
+        highScoreDisplay.textContent = highScore;
+      }
+
+      function drawRect(x, y, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, GRID_SIZE, GRID_SIZE);
+        ctx.strokeStyle = "#000"; // Small black border for pixelated look
+        ctx.strokeRect(x, y, GRID_SIZE, GRID_SIZE);
+      }
+
+      function drawSnake() {
+        snake.forEach((segment) => drawRect(segment.x, segment.y, "#0f0")); // Green snake
+      }
+
+      function drawFood() {
+        drawRect(food.x, food.y, "#f00"); // Red food
+      }
+
+      function generateFood() {
+        let newFoodX, newFoodY;
+        let collisionWithSnake;
+        do {
+          // Random position within canvas, aligned to grid
+          newFoodX =
+            Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)) * GRID_SIZE;
+          newFoodY =
+            Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE)) * GRID_SIZE;
+          // Check if new food position overlaps with any snake segment
+          collisionWithSnake = snake.some(
+            (segment) => segment.x === newFoodX && segment.y === newFoodY
+          );
+        } while (collisionWithSnake); // Keep trying until a clear spot is found
+        food = { x: newFoodX, y: newFoodY };
+      }
+
+      function gameLoop() {
+        if (!gameRunning || isPaused) return; // Only run if game is active and not paused
+
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); // Clear canvas for next frame
+
+        const head = { x: snake[0].x + dx, y: snake[0].y + dy }; // Calculate new head position
+
+        // Wall collision detection
+        if (
+          head.x < 0 ||
+          head.x >= CANVAS_WIDTH ||
+          head.y < 0 ||
+          head.y >= CANVAS_HEIGHT
+        ) {
+          handleCollision();
+          return;
+        }
+
+        // Self-collision detection (head hits any part of the body)
+        for (let i = 1; i < snake.length; i++) {
+          if (head.x === snake[i].x && head.y === snake[i].y) {
+            handleCollision();
+            return;
+          }
+        }
+
+        snake.unshift(head); // Add new head to the front of the snake array
+
+        // Check if food is eaten
+        if (head.x === food.x && head.y === food.y) {
+          score++;
+          generateFood(); // Generate new food
+          // Increase speed slightly for more challenge, but not too fast
+          if (gameSpeed > 50) {
+            // Minimum speed of 50ms
+            gameSpeed -= 5;
+            clearInterval(gameInterval); // Clear old interval
+            gameInterval = setInterval(gameLoop, gameSpeed); // Start new interval with updated speed
+          }
+        } else {
+          snake.pop(); // Remove tail if no food eaten (snake moves normally)
+        }
+
+        updateDisplay(); // Update score/lives/high score
+        drawFood();
+        drawSnake();
+      }
+
+      function handleCollision() {
+        lives--; // Decrement a life
+        if (lives < 0) {
+          gameOver(); // No lives left, game over
+        } else {
+          // Reset snake position and direction for the current life
+          snake = [
+            { x: 10 * GRID_SIZE, y: 10 * GRID_SIZE },
+            { x: 9 * GRID_SIZE, y: 10 * GRID_SIZE },
+          ];
+          dx = GRID_SIZE; // Reset direction to right
+          dy = 0;
+          generateFood(); // Re-generate food to prevent instant re-collision
+          updateDisplay();
+
+          // Pause game briefly after collision
+          gameRunning = false;
+          setTimeout(() => {
+            gameRunning = true; // Resume game after 1 second
+          }, 1000); // 1-second pause
+        }
+      }
+
+      function gameOver() {
+        gameRunning = false; // Stop the game loop
+        clearInterval(gameInterval); // Ensure interval is cleared
+
+        // Update high score if current score is higher
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem("snakeHighScore", highScore); // Save to local storage
+        }
+
+        // Display game over screen with final scores
+        finalScoreDisplay.textContent = score;
+        finalHighScoreDisplay.textContent = highScore;
+        gameOverOverlay.classList.remove("hidden"); // Show game over overlay
+        updateDisplay(); // Update top display too
+      }
+
+      function changeDirection(event) {
+        const keyPressed = event.key.toLowerCase(); // Get key and convert to lowercase for WASD
+        const goingUp = dy === -GRID_SIZE;
+        const goingDown = dy === GRID_SIZE;
+        const goingLeft = dx === -GRID_SIZE;
+        const goingRight = dx === GRID_SIZE;
+
+        // Handle game start via key press (only if on start screen)
+        if (!gameRunning && !startOverlay.classList.contains("hidden")) {
+          if (
+            [
+              "arrowup",
+              "w",
+              "arrowdown",
+              "s",
+              "arrowleft",
+              "a",
+              "arrowright",
+              "d",
+            ].includes(keyPressed)
+          ) {
+            startOverlay.classList.add("hidden");
+            gameRunning = true;
+            gameInterval = setInterval(gameLoop, gameSpeed);
+            // Immediately change direction based on the first key press
+            switch (keyPressed) {
+              case "arrowup":
+              case "w":
+                dy = -GRID_SIZE;
+                break;
+              case "arrowdown":
+              case "s":
+                dy = GRID_SIZE;
+                break;
+              case "arrowleft":
+              case "a":
+                dx = -GRID_SIZE;
+                dy = 0;
+                break;
+              case "arrowright":
+              case "d":
+                dx = GRID_SIZE;
+                dy = 0;
+                break;
+            }
+          }
+          return; // Prevent further processing of the key press
+        }
+
+        // Prevent reverse movement
+        switch (keyPressed) {
+          case "arrowup":
+          case "w":
+            if (!goingDown) {
+              dx = 0;
+              dy = -GRID_SIZE;
+            }
+            break;
+          case "arrowdown":
+          case "s":
+            if (!goingUp) {
+              dx = 0;
+              dy = GRID_SIZE;
+            }
+            break;
+          case "arrowleft":
+          case "a":
+            if (!goingRight) {
+              dx = -GRID_SIZE;
+              dy = 0;
+            }
+            break;
+          case "arrowright":
+          case "d":
+            if (!goingLeft) {
+              dx = GRID_SIZE;
+              dy = 0;
+            }
+            break;
+        }
+
+        // Handle 'R' key for replay/restart at any point
+        if (keyPressed === "r") {
+          initGame(); // Reset the game to the initial start screen
+        }
+      }
+
+      // Event listener for Start Game button
+      startButton.addEventListener("click", () => {
+        playMusic();
+        startOverlay.classList.add("hidden");
+        gameRunning = true;
+        gameInterval = setInterval(gameLoop, gameSpeed);
+        // Enable pause button when game starts
+        pauseButton.style.opacity = "1";
+        pauseButton.style.cursor = "pointer";
+      });
+
+      // Event listener for Play Again button
+      replayButton.addEventListener("click", () => {
+        playMusic();
+        initGame(); // Re-initialize the game
+      });
+
+      // Play music on first key interaction (for autoplay policy)
+      document.addEventListener("keydown", (e) => {
+        playMusic();
+        changeDirection(e);
+      });
+
+      // Touch control buttons event listeners
+      const upBtn = document.querySelector(".up-btn");
+      const downBtn = document.querySelector(".down-btn");
+      const leftBtn = document.querySelector(".left-btn");
+      const rightBtn = document.querySelector(".right-btn");
+
+      function createTouchHandler(key) {
+        return (e) => {
+          e.preventDefault();
+          changeDirection({ key: key });
+        };
+      }
+
+      upBtn.addEventListener("touchstart", createTouchHandler("ArrowUp"));
+      downBtn.addEventListener("touchstart", createTouchHandler("ArrowDown"));
+      leftBtn.addEventListener("touchstart", createTouchHandler("ArrowLeft"));
+      rightBtn.addEventListener("touchstart", createTouchHandler("ArrowRight"));
+
+      // Also add click events for testing on desktop
+      upBtn.addEventListener("mousedown", createTouchHandler("ArrowUp"));
+      downBtn.addEventListener("mousedown", createTouchHandler("ArrowDown"));
+      leftBtn.addEventListener("mousedown", createTouchHandler("ArrowLeft"));
+      rightBtn.addEventListener("mousedown", createTouchHandler("ArrowRight"));
+
+      // Initial setup when the page loads
+      initGame();
+    </script>
+  </body>
+</html>
